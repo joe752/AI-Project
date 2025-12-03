@@ -1,14 +1,12 @@
 """FastAPI application entrypoint."""
 import logging
 import os
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.routers import health, repo
-from app import rube_client as rube_module
 
 # Configure logging
 logging.basicConfig(
@@ -18,40 +16,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """
-    Application lifespan manager for startup and shutdown events.
-
-    This manages the lifecycle of the global RubeClient instance:
-    - Startup: Creates a single RubeClient and stores it in rube_module.rube_client
-    - Shutdown: Calls rube_client.close() to clean up HTTP connections
-
-    The global instance is then injected into route handlers via the
-    get_rube_client() dependency function.
-    """
-    # Startup: Initialize global Rube client
-    logger.info(f"Starting GAE API service")
-    logger.info(f"Rube base URL: {settings.rube_base_url}")
-    logger.info(f"Log level: {settings.log_level}")
-
-    try:
-        # Create single RubeClient instance for application lifetime
-        rube_module.rube_client = rube_module.RubeClient()
-        logger.info("RubeClient initialized successfully")
-    except RuntimeError as exc:
-        logger.error(f"Failed to initialize RubeClient: {exc}")
-        raise
-
-    yield
-
-    # Shutdown: Clean up global Rube client
-    logger.info("Shutting down GAE API service")
-    if rube_module.rube_client:
-        await rube_module.rube_client.close()
-        logger.info("RubeClient closed successfully")
-
-
 # Create FastAPI app
 # Disable docs in production for security and reduced overhead
 # GAE_ENV is set to 'standard' in production GAE environment
@@ -59,9 +23,8 @@ is_production = os.getenv("GAE_ENV", "").startswith("standard")
 
 app = FastAPI(
     title="Project Designer GAE API",
-    description="HTTP API for repository inspection via Rube",
+    description="Minimal HTTP API service",
     version="1.0.0",
-    lifespan=lifespan,
     # Disable docs in production GAE, keep for local dev
     docs_url="/docs" if not is_production else None,
     redoc_url="/redoc" if not is_production else None,
@@ -98,8 +61,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def root():
     """Root endpoint with service information."""
     return {
-        "service": "Project Designer GAE API",
+        "service": "GAE API",
+        "status": "ok",
         "version": "1.0.0",
-        "docs": "/docs",
-        "health": "/health"
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs" if not is_production else "disabled"
+        }
     }
