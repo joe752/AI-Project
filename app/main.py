@@ -19,13 +19,23 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager for startup and shutdown events."""
-    # Startup: Initialize Rube client
+    """
+    Application lifespan manager for startup and shutdown events.
+
+    This manages the lifecycle of the global RubeClient instance:
+    - Startup: Creates a single RubeClient and stores it in rube_module.rube_client
+    - Shutdown: Calls rube_client.close() to clean up HTTP connections
+
+    The global instance is then injected into route handlers via the
+    get_rube_client() dependency function.
+    """
+    # Startup: Initialize global Rube client
     logger.info(f"Starting GAE API service")
     logger.info(f"Rube base URL: {settings.rube_base_url}")
     logger.info(f"Log level: {settings.log_level}")
 
     try:
+        # Create single RubeClient instance for application lifetime
         rube_module.rube_client = rube_module.RubeClient()
         logger.info("RubeClient initialized successfully")
     except RuntimeError as exc:
@@ -34,10 +44,11 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Shutdown: Clean up resources
+    # Shutdown: Clean up global Rube client
     logger.info("Shutting down GAE API service")
     if rube_module.rube_client:
         await rube_module.rube_client.close()
+        logger.info("RubeClient closed successfully")
 
 
 # Create FastAPI app

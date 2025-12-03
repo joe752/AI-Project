@@ -251,6 +251,22 @@ class RubeClient:
 # -------------------------------------------------------------------------
 # Global instance for FastAPI dependency injection
 # -------------------------------------------------------------------------
+#
+# Pattern:
+# 1. On startup (in app/main.py lifespan), create a single RubeClient instance
+#    and store it in this module-level variable: rube_client = RubeClient()
+#
+# 2. In route handlers, inject the client using Depends(get_rube_client)
+#    Example: rube: RubeClient = Depends(get_rube_client)
+#
+# 3. On shutdown (in app/main.py lifespan), call await rube_client.close()
+#    to properly clean up HTTP connections
+#
+# This pattern ensures:
+# - Single HTTP client instance shared across all requests (connection pooling)
+# - Proper resource cleanup on application shutdown
+# - Thread-safe dependency injection via FastAPI's Depends()
+# -------------------------------------------------------------------------
 
 rube_client: Optional[RubeClient] = None
 
@@ -259,11 +275,21 @@ def get_rube_client() -> RubeClient:
     """
     FastAPI dependency to get the global RubeClient instance.
 
+    This function is used as a dependency in route handlers to inject
+    the shared RubeClient instance. The instance is initialized once
+    during application startup in main.py.
+
+    Usage in routes:
+        @router.get("/endpoint")
+        async def my_endpoint(rube: RubeClient = Depends(get_rube_client)):
+            result = await rube.get_repo_snapshot(project_id)
+            return result
+
     Returns:
-        RubeClient instance
+        RubeClient: The global RubeClient instance
 
     Raises:
-        RuntimeError: If client not initialized in main.py
+        RuntimeError: If client not initialized in main.py lifespan
     """
     if not rube_client:
         raise RuntimeError("RubeClient not initialized in main.py")
