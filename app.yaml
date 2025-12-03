@@ -7,8 +7,8 @@ automatic_scaling:
   min_instances: 0
   # Low limit to prevent unexpected costs
   max_instances: 3
-  # Scale up when requests are waiting
-  target_concurrent_requests: 5
+  # Max concurrent requests per instance
+  max_concurrent_requests: 10
 
 env_variables:
   # Application configuration
