@@ -1,0 +1,12 @@
+runtime: python310
+
+instance_class: F1
+
+automatic_scaling:
+  min_instances: 0
+  max_instances: 10
+
+env_variables:
+  RUBE_BASE_URL: "https://rube.example.com"
+
+entrypoint: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
