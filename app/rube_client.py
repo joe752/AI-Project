@@ -247,6 +247,56 @@ class RubeClient:
             size=size,
         )
 
+    async def ping(self) -> bool:
+        """
+        Lightweight ping to check Rube connectivity.
+
+        TODO: Update to use actual Rube health/ping endpoint when available.
+        Currently hits base URL to verify connection and JSON parsing.
+
+        Returns:
+            bool: True if Rube is reachable and responds with valid JSON
+
+        Raises:
+            HTTPException: If Rube is unreachable or returns invalid response
+        """
+        # TODO: Replace with actual Rube ping/health endpoint
+        # For now, just verify we can connect to base URL
+        try:
+            url = self.base_url.rstrip("/")
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Accept": "application/json"
+            }
+
+            logger.debug(f"Pinging Rube at {url}")
+            resp = await self.client.get(url, headers=headers, timeout=5.0)
+
+            # Accept any successful status (200-299) as a valid ping
+            if 200 <= resp.status_code < 300:
+                try:
+                    # Verify we can parse JSON response
+                    resp.json()
+                    logger.info("Rube ping successful")
+                    return True
+                except ValueError:
+                    # Non-JSON response, but connection works
+                    logger.info("Rube ping successful (non-JSON response)")
+                    return True
+            else:
+                logger.warning(f"Rube ping returned status {resp.status_code}")
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"Rube ping failed with status {resp.status_code}"
+                )
+
+        except httpx.TimeoutException:
+            logger.error("Rube ping timeout")
+            raise HTTPException(status_code=504, detail="Rube ping timeout")
+        except httpx.RequestError as exc:
+            logger.error(f"Rube ping connection error: {exc}")
+            raise HTTPException(status_code=503, detail="Cannot reach Rube service")
+
 
 # -------------------------------------------------------------------------
 # Global instance for FastAPI dependency injection
