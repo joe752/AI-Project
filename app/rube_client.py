@@ -6,7 +6,7 @@ Authentication uses RUBE_API_KEY via Bearer token.
 """
 
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
 from fastapi import HTTPException
@@ -46,7 +46,7 @@ class RubeClient:
         await self.client.aclose()
         logger.info("RubeClient closed")
 
-    async def _get(self, endpoint: str, params: Optional[dict] = None) -> dict:
+    async def _get(self, endpoint: str, params: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """
         Internal helper for GET requests to Rube.
 
@@ -86,7 +86,7 @@ class RubeClient:
         # Map Rube HTTP errors to appropriate FastAPI exceptions
         return self._handle_response(resp, url)
 
-    def _handle_response(self, resp: httpx.Response, url: str) -> dict:
+    def _handle_response(self, resp: httpx.Response, url: str) -> dict[str, Any]:
         """
         Map Rube response codes to FastAPI HTTPException.
 
@@ -185,27 +185,30 @@ class RubeClient:
             HTTPException: If Rube request fails
         """
         # TODO: Update rube_endpoints.REPO_SNAPSHOT when real API is documented
-        data = await self._get(
+        data: dict[str, Any] = await self._get(
             rube_endpoints.REPO_SNAPSHOT,
             params={"project_id": project_id}
         )
 
         # Transform Rube response to our schema
         # TODO: Adjust field mapping based on actual Rube response structure
-        files = [
+        raw_files: list[dict[str, Any]] = data.get("files", [])
+        files: list[FileMetadata] = [
             FileMetadata(
                 path=f.get("path", ""),
                 type=f.get("type", "file"),
                 size=f.get("size"),
                 sha=f.get("sha"),
             )
-            for f in data.get("files", [])
+            for f in raw_files
         ]
+
+        commit_info: dict[str, Any] | None = data.get("commit_info")
 
         return RepoSnapshotResponse(
             project_id=project_id,
             files=files,
-            commit_info=data.get("commit_info"),
+            commit_info=commit_info,
         )
 
     async def get_file_content(self, project_id: str, path: str) -> FileContentResponse:
@@ -226,18 +229,22 @@ class RubeClient:
             HTTPException: If Rube request fails
         """
         # TODO: Update rube_endpoints.FILE_CONTENT when real API is documented
-        data = await self._get(
+        data: dict[str, Any] = await self._get(
             rube_endpoints.FILE_CONTENT,
             params={"project_id": project_id, "path": path}
         )
 
         # TODO: Adjust field mapping based on actual Rube response structure
+        content: str = data.get("content", "")
+        encoding: str = data.get("encoding", "utf-8")
+        size: int | None = data.get("size")
+
         return FileContentResponse(
             project_id=project_id,
             path=path,
-            content=data.get("content", ""),
-            encoding=data.get("encoding", "utf-8"),
-            size=data.get("size"),
+            content=content,
+            encoding=encoding,
+            size=size,
         )
 
 

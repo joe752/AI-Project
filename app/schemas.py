@@ -1,5 +1,5 @@
 """Pydantic models for request/response schemas."""
-from typing import Any
+from typing import Any, Optional
 from pydantic import BaseModel, Field
 
 
@@ -21,8 +21,8 @@ class FileMetadata(BaseModel):
 
     path: str = Field(..., description="Relative path to the file")
     type: str = Field(..., description="Type of entry: 'file' or 'dir'")
-    size: int | None = Field(None, description="File size in bytes (if applicable)")
-    sha: str | None = Field(None, description="Git SHA or hash (if available)")
+    size: Optional[int] = Field(None, description="File size in bytes (if applicable)")
+    sha: Optional[str] = Field(None, description="Git SHA or hash (if available)")
 
 
 class RepoSnapshotResponse(BaseModel):
@@ -30,7 +30,7 @@ class RepoSnapshotResponse(BaseModel):
 
     project_id: str = Field(..., description="Project/repo identifier")
     files: list[FileMetadata] = Field(default_factory=list, description="List of files and directories")
-    commit_info: dict[str, Any] | None = Field(None, description="Optional recent commit information")
+    commit_info: Optional[dict[str, Any]] = Field(None, description="Optional recent commit information")
 
 
 class FileContentResponse(BaseModel):
@@ -40,4 +40,4 @@ class FileContentResponse(BaseModel):
     path: str = Field(..., description="File path")
     content: str = Field(..., description="UTF-8 encoded file content")
     encoding: str = Field(default="utf-8", description="Content encoding")
-    size: int | None = Field(None, description="File size in bytes")
+    size: Optional[int] = Field(None, description="File size in bytes")
