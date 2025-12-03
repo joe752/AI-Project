@@ -1,6 +1,11 @@
+# FastAPI web framework and dependencies
 fastapi==0.104.1
-uvicorn==0.24.0
-gunicorn==21.2.0
-httpx==0.25.1
 pydantic==2.5.0
 pydantic-settings==2.1.0
+
+# ASGI/WSGI servers for GAE deployment
+uvicorn==0.24.0
+gunicorn==21.2.0
+
+# HTTP client for Rube API
+httpx==0.25.1
