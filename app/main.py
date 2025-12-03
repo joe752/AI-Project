@@ -1,5 +1,6 @@
 """FastAPI application entrypoint."""
 import logging
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -52,11 +53,20 @@ async def lifespan(app: FastAPI):
 
 
 # Create FastAPI app
+# Disable docs in production for security and reduced overhead
+# GAE_ENV is set to 'standard' in production GAE environment
+is_production = os.getenv("GAE_ENV", "").startswith("standard")
+
 app = FastAPI(
     title="Project Designer GAE API",
     description="HTTP API for repository inspection via Rube",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    # Disable docs in production GAE, keep for local dev
+    docs_url="/docs" if not is_production else None,
+    redoc_url="/redoc" if not is_production else None,
+    # Disable OpenAPI schema in production to reduce overhead
+    openapi_url="/openapi.json" if not is_production else None,
 )
 
 

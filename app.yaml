@@ -3,8 +3,12 @@ runtime: python310
 instance_class: F1
 
 automatic_scaling:
+  # Scale to zero when idle (cost optimization)
   min_instances: 0
-  max_instances: 10
+  # Low limit to prevent unexpected costs
+  max_instances: 3
+  # Scale up when requests are waiting
+  target_concurrent_requests: 5
 
 env_variables:
   # Required: Rube service configuration
@@ -14,4 +18,8 @@ env_variables:
   # Optional: Application configuration
   LOG_LEVEL: "INFO"
 
-entrypoint: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app
+# Optimized for F1 instance (256MB RAM)
+# - Single worker to minimize memory usage
+# - Timeout to prevent hanging requests
+# - Graceful timeout for proper shutdown
+entrypoint: gunicorn -w 1 -k uvicorn.workers.UvicornWorker --timeout 30 --graceful-timeout 10 app.main:app
