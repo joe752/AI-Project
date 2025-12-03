@@ -7,8 +7,11 @@ automatic_scaling:
   max_instances: 10
 
 env_variables:
-  # TODO: Update these values when deploying to production
+  # Required: Rube service configuration
   RUBE_BASE_URL: "https://api.rube.app"
   RUBE_API_KEY: "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiJ1c2VyXzAxS0JHWEgxUVRBTTdXWEYyVkhIUFoxS0paIiwib3JnSWQiOiJvcmdfMDFLQkdYSFJTRlZFQk5XRjBYQk5RU0RIUTkiLCJpYXQiOjE3NjQ3MjY0MzZ9.idSTo6x7YbVRBFqR-WZJgd4JT9NYGdWVfVB6xzQrlkY"
+
+  # Optional: Application configuration
+  LOG_LEVEL: "INFO"
 
 entrypoint: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app

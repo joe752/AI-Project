@@ -21,9 +21,19 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan manager for startup and shutdown events."""
     # Startup: Initialize Rube client
-    logger.info(f"Starting GAE API service with Rube base URL: {settings.rube_base_url}")
-    rube_module.rube_client = rube_module.RubeClient(settings.rube_base_url)
+    logger.info(f"Starting GAE API service")
+    logger.info(f"Rube base URL: {settings.rube_base_url}")
+    logger.info(f"Log level: {settings.log_level}")
+
+    try:
+        rube_module.rube_client = rube_module.RubeClient()
+        logger.info("RubeClient initialized successfully")
+    except RuntimeError as exc:
+        logger.error(f"Failed to initialize RubeClient: {exc}")
+        raise
+
     yield
+
     # Shutdown: Clean up resources
     logger.info("Shutting down GAE API service")
     if rube_module.rube_client:
